@@ -1,0 +1,32 @@
+# .NET
+bin/
+obj/
+*.user
+*.userosscache
+.vs/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+
+# Env files (keep .env.example)
+.env
+.env.*.local
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.sw?
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

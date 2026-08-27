@@ -1,0 +1,6 @@
+@HostAddress = http://localhost:5213
+
+GET {{HostAddress}}/health
+Accept: text/plain
+
+###
