@@ -82,3 +82,12 @@ Run the backend on the `https` profile, and trust the dev certificate once with
 `dotnet dev-certs https --trust`, or the browser blocks the requests.
 
 Scripts: `npm run dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm run format`.
+
+### Theme
+
+Single dark theme, `forgeflowDark`, in [src/plugins/vuetify.js](frontend/src/plugins/vuetify.js):
+`#111827` background, `#1F2937` surface, `#22C55E` primary, `#F5F5F5` text, `#374151` borders.
+Global `defaults` give every card a bordered surface look and every button flat-case labels.
+
+Use theme tokens (`color="surface"`, `color="primary"`, `text-medium-emphasis`) instead of
+hard-coded hex, so a light theme later stays a one-file change.
