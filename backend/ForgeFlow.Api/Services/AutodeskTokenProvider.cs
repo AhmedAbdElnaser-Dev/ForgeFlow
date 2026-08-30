@@ -1,59 +1,55 @@
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json.Serialization;
 using ForgeFlow.Api.Options;
 using Microsoft.Extensions.Options;
 
 namespace ForgeFlow.Api.Services;
 
+/// <summary>
+/// Requests two-legged Autodesk tokens and keeps the current one in memory.
+/// Registered as a singleton so every caller shares the same cached token.
+/// </summary>
 public class AutodeskTokenProvider(
     IHttpClientFactory httpClientFactory,
     IOptions<AutodeskOptions> options,
     ILogger<AutodeskTokenProvider> logger) : IAutodeskTokenProvider
 {
-    /// <summary>Name of the configured <see cref="HttpClient"/> this provider resolves.</summary>
     public const string HttpClientName = "autodesk";
 
     private const string TokenPath = "authentication/v2/token";
 
-    // Renew slightly early so a token never expires mid-request.
-    private static readonly TimeSpan ExpirySkew = TimeSpan.FromSeconds(60);
+    /// <summary>Renew this early so a token cannot expire mid-request.</summary>
+    private static readonly TimeSpan RenewBefore = TimeSpan.FromSeconds(60);
 
-    private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private readonly AutodeskOptions _options = options.Value;
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
-    private AutodeskAccessToken? _cached;
+    private AutodeskAccessToken? _token;
+
+    private bool HasUsableToken =>
+        _token is not null && DateTimeOffset.UtcNow < _token.ExpiresAtUtc - RenewBefore;
 
     public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default) =>
         (await GetTokenAsync(cancellationToken)).AccessToken;
 
     public async Task<AutodeskAccessToken> GetTokenAsync(CancellationToken cancellationToken = default)
     {
-        if (IsCurrent())
+        if (HasUsableToken)
         {
-            return _cached!;
+            return _token!;
         }
 
+        // One lock so a burst of callers triggers a single request instead of one each.
         await _refreshLock.WaitAsync(cancellationToken);
         try
         {
-            // Another caller may have refreshed while we waited.
-            if (IsCurrent())
+            if (HasUsableToken)
             {
-                return _cached!;
+                return _token!;
             }
 
-            var response = await RequestTokenAsync(cancellationToken);
-            _cached = new AutodeskAccessToken(
-                response.AccessToken,
-                response.TokenType,
-                DateTimeOffset.UtcNow.AddSeconds(response.ExpiresIn));
-
-            logger.LogInformation(
-                "Retrieved Autodesk access token, valid for {ExpiresIn}s.",
-                response.ExpiresIn);
-
-            return _cached;
+            _token = await FetchTokenAsync(cancellationToken);
+            return _token;
         }
         finally
         {
@@ -61,32 +57,12 @@ public class AutodeskTokenProvider(
         }
     }
 
-    private bool IsCurrent() =>
-        _cached is not null && DateTimeOffset.UtcNow < _cached.ExpiresAtUtc - ExpirySkew;
-
-    private async Task<TokenResponse> RequestTokenAsync(CancellationToken cancellationToken)
+    private async Task<AutodeskAccessToken> FetchTokenAsync(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.ClientId) ||
-            string.IsNullOrWhiteSpace(_options.ClientSecret))
-        {
-            throw new InvalidOperationException(
-                "Autodesk:ClientId and Autodesk:ClientSecret are not configured.");
-        }
+        var client = httpClientFactory.CreateClient(HttpClientName);
 
-        var credentials = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes($"{_options.ClientId}:{_options.ClientSecret}"));
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, TokenPath);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["grant_type"] = "client_credentials",
-            ["scope"] = _options.Scopes,
-        });
-
-        var httpClient = httpClientFactory.CreateClient(HttpClientName);
-        using var response = await httpClient.SendAsync(request, cancellationToken);
+        using var request = CreateTokenRequest();
+        using var response = await client.SendAsync(request, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -95,19 +71,45 @@ public class AutodeskTokenProvider(
                 $"Autodesk token request failed with {(int)response.StatusCode}: {body}");
         }
 
-        return await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken)
+        var payload = await response.Content.ReadFromJsonAsync<AutodeskTokenResponse>(cancellationToken)
             ?? throw new HttpRequestException("Autodesk token response was empty.");
+
+        logger.LogInformation(
+            "Retrieved Autodesk access token, valid for {ExpiresIn}s.",
+            payload.ExpiresIn);
+
+        return new AutodeskAccessToken(
+            payload.AccessToken,
+            payload.TokenType,
+            DateTimeOffset.UtcNow.AddSeconds(payload.ExpiresIn));
     }
 
-    private sealed record TokenResponse
+    private HttpRequestMessage CreateTokenRequest()
     {
-        [JsonPropertyName("access_token")]
-        public required string AccessToken { get; init; }
+        var request = new HttpRequestMessage(HttpMethod.Post, TokenPath);
 
-        [JsonPropertyName("token_type")]
-        public string TokenType { get; init; } = "Bearer";
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", EncodeCredentials());
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "client_credentials",
+            ["scope"] = _options.Scopes,
+        });
 
-        [JsonPropertyName("expires_in")]
-        public int ExpiresIn { get; init; }
+        return request;
+    }
+
+    /// <summary>Base64 of "clientId:clientSecret", as the Basic scheme expects.</summary>
+    private string EncodeCredentials()
+    {
+        if (string.IsNullOrWhiteSpace(_options.ClientId) ||
+            string.IsNullOrWhiteSpace(_options.ClientSecret))
+        {
+            throw new InvalidOperationException(
+                "Autodesk:ClientId and Autodesk:ClientSecret are not configured.");
+        }
+
+        var pair = $"{_options.ClientId}:{_options.ClientSecret}";
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(pair));
     }
 }

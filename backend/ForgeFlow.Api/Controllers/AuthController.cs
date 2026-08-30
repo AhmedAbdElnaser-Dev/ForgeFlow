@@ -1,3 +1,5 @@
+using ForgeFlow.Api.Contracts;
+using ForgeFlow.Api.Mapping;
 using ForgeFlow.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -5,17 +7,18 @@ namespace ForgeFlow.Api.Controllers;
 
 public class AuthController(
     IAutodeskTokenProvider tokenProvider,
+    AutodeskMapper mapper,
     IWebHostEnvironment environment) : ApiControllerBase
 {
     /// <summary>
     /// Triggers the two-legged Autodesk token request and returns the result.
     /// Development only: this token carries the application's own access and must never
-    /// be handed to a browser. A scoped, short-lived viewer token comes later.
+    /// reach a browser. A scoped, short-lived viewer token comes later.
     /// </summary>
-    [HttpGet("token")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("/Autodesk2LeggedToken")]
+    [ProducesResponseType<AutodeskTokenDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetAutodeskToken(CancellationToken cancellationToken)
+    public async Task<ActionResult<AutodeskTokenDto>> GetAutodeskToken(CancellationToken cancellationToken)
     {
         if (!environment.IsDevelopment())
         {
@@ -24,12 +27,8 @@ public class AuthController(
 
         var token = await tokenProvider.GetTokenAsync(cancellationToken);
 
-        return Ok(new
-        {
-            token.AccessToken,
-            token.TokenType,
-            token.ExpiresInSeconds,
-            token.ExpiresAtUtc,
-        });
+        AutodeskTokenDto tokenDto = mapper.ToDto(token);
+
+        return Ok(tokenDto);
     }
 }
