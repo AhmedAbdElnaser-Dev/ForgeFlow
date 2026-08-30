@@ -1,5 +1,5 @@
 using ForgeFlow.Api.Contracts;
-using ForgeFlow.Api.Services;
+using ForgeFlow.Api.Models;
 using Riok.Mapperly.Abstractions;
 
 namespace ForgeFlow.Api.Mapping;

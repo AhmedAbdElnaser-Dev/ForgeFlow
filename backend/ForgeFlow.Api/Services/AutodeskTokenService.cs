@@ -1,5 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json.Serialization;
+using ForgeFlow.Api.Models;
 using ForgeFlow.Api.Options;
 using Microsoft.Extensions.Options;
 
@@ -9,10 +11,10 @@ namespace ForgeFlow.Api.Services;
 /// Requests two-legged Autodesk tokens and keeps the current one in memory.
 /// Registered as a singleton so every caller shares the same cached token.
 /// </summary>
-public class AutodeskTokenProvider(
+public class AutodeskTokenService(
     IHttpClientFactory httpClientFactory,
     IOptions<AutodeskOptions> options,
-    ILogger<AutodeskTokenProvider> logger) : IAutodeskTokenProvider
+    ILogger<AutodeskTokenService> logger) : IAutodeskTokenService
 {
     public const string HttpClientName = "autodesk";
 
@@ -71,7 +73,7 @@ public class AutodeskTokenProvider(
                 $"Autodesk token request failed with {(int)response.StatusCode}: {body}");
         }
 
-        var payload = await response.Content.ReadFromJsonAsync<AutodeskTokenResponse>(cancellationToken)
+        var payload = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken)
             ?? throw new HttpRequestException("Autodesk token response was empty.");
 
         logger.LogInformation(
@@ -111,5 +113,18 @@ public class AutodeskTokenProvider(
 
         var pair = $"{_options.ClientId}:{_options.ClientSecret}";
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(pair));
+    }
+
+    /// <summary>Raw response shape. Private: nothing outside this service should see it.</summary>
+    private sealed record TokenResponse
+    {
+        [JsonPropertyName("access_token")]
+        public required string AccessToken { get; init; }
+
+        [JsonPropertyName("token_type")]
+        public string TokenType { get; init; } = "Bearer";
+
+        [JsonPropertyName("expires_in")]
+        public int ExpiresIn { get; init; }
     }
 }

@@ -1,4 +1,4 @@
-namespace ForgeFlow.Api.Services;
+namespace ForgeFlow.Api.Models;
 
 /// <summary>
 /// A two-legged Autodesk access token and when it stops being valid.

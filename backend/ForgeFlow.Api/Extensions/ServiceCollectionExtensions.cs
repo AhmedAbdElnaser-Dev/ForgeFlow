@@ -56,14 +56,14 @@ public static class ServiceCollectionExtensions
     {
         services.Configure<AutodeskOptions>(configuration.GetSection(AutodeskOptions.SectionName));
 
-        services.AddHttpClient(AutodeskTokenProvider.HttpClientName, (provider, client) =>
+        services.AddHttpClient(AutodeskTokenService.HttpClientName, (provider, client) =>
         {
             var autodesk = provider.GetRequiredService<IOptions<AutodeskOptions>>().Value;
             client.BaseAddress = new Uri(autodesk.BaseUrl.TrimEnd('/') + '/');
         });
 
         // Singleton so the cached access token is shared across requests.
-        services.AddSingleton<IAutodeskTokenProvider, AutodeskTokenProvider>();
+        services.AddSingleton<IAutodeskTokenService, AutodeskTokenService>();
         services.AddSingleton<AutodeskMapper>();
 
         return services;
