@@ -52,6 +52,17 @@ Configuration:
   The local development value lives in `appsettings.Development.json`.
   Outside development, supply it through environment variables or user secrets.
 - `Cors:AllowedOrigins` — origins allowed to call the API (development: `http://localhost:5173`).
+- `Autodesk:ClientId` / `Autodesk:ClientSecret` — Autodesk Platform Services (Forge) app
+  credentials, bound to `AutodeskOptions` and injected as `IOptions<AutodeskOptions>`.
+  Empty in `appsettings.json`; **never commit real values**. Set them locally with user secrets:
+
+```bash
+cd backend/ForgeFlow.Api
+dotnet user-secrets set "Autodesk:ClientId" "<your client id>"
+dotnet user-secrets set "Autodesk:ClientSecret" "<your client secret>"
+```
+
+  In other environments use environment variables: `Autodesk__ClientId`, `Autodesk__ClientSecret`.
 
 Create the database and apply the Identity schema:
 

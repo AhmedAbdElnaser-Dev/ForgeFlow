@@ -1,5 +1,6 @@
 using ForgeFlow.Api.Data;
 using ForgeFlow.Api.Identity;
+using ForgeFlow.Api.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +23,9 @@ builder.Services
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ForgeFlowDbContext>();
+
+builder.Services.Configure<AutodeskOptions>(
+    builder.Configuration.GetSection(AutodeskOptions.SectionName));
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 
