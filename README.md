@@ -131,3 +131,7 @@ Global `defaults` give every card a bordered surface look and every button flat-
 
 Use theme tokens (`color="surface"`, `color="primary"`, `text-medium-emphasis`) instead of
 hard-coded hex, so a light theme later stays a one-file change.
+
+## Roadmap
+
+Feature checklist and what each remaining piece needs: [docs/ROADMAP.md](docs/ROADMAP.md).
