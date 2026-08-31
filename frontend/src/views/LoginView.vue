@@ -32,7 +32,7 @@ async function onSubmit() {
 
   try {
     await auth.signIn({ email: email.value, password: password.value })
-    await router.replace(route.query.redirect || { name: 'home' })
+    await router.replace(route.query.redirect || { name: 'profile' })
   } catch (error) {
     errorMessage.value =
       error.response?.data?.detail ?? 'Could not sign in. Please try again.'
