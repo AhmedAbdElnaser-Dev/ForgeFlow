@@ -41,6 +41,9 @@ Use `--launch-profile https` for the HTTPS endpoint the frontend talks to.
 - Swagger UI: https://localhost:7243/swagger (`/` redirects here in Development)
 - OpenAPI document: https://localhost:7243/openapi/v1.json
 - Health (includes a SQL Server connectivity check): https://localhost:7243/health
+- `POST /api/auth/login` — email + password, issues the `ForgeFlow.Auth` cookie.
+- `POST /api/auth/logout` — clears it.
+- `GET /api/auth/me` — the signed-in user; the SPA calls this on load to restore the session.
 - `GET /api/auth/token` — **Development only.** Triggers the two-legged Autodesk token request
   and returns the token plus its expiry. Returns 404 outside Development. Exists to inspect the
   flow while learning; the browser must never receive this token (see the note below).
@@ -89,24 +92,18 @@ On startup in Development, [IdentitySeeder](backend/ForgeFlow.Api/Data/Seeding/I
 creates the users listed under `IdentitySeed:Users` in `appsettings.Development.json`, along with
 their roles. Existing users are skipped, so restarts never rewrite a password.
 
-Passwords are **not committed**. Leave `Password` out and the seeder generates a unique 16-character
-one per user and logs it once at startup — that is the only time it is visible, since only the hash
-is stored. Grab it from the console:
+| Email | Role | Password |
+| --- | --- | --- |
+| `admin@forgeflow.local` | Admin | `P@ssw0rd` |
+| `engineer@forgeflow.local` | Engineer | `P@ssw0rd` |
+| `viewer@forgeflow.local` | Viewer | `P@ssw0rd` |
 
-```
-warn: Seeded admin@forgeflow.local with generated password: <generated>
-```
+Every user takes `IdentitySeed:DefaultPassword`; a `Password` on an individual entry overrides it.
+`DefaultPassword` is empty in `appsettings.json`, and a user with no password is skipped with a
+warning — so this only ever seeds where it is configured, never in production.
 
-To pin a password instead, set it through user secrets rather than the JSON file:
-
-```bash
-dotnet user-secrets set "IdentitySeed:Users:0:Password" "<your password>"
-```
-
-Passwords must satisfy the default Identity policy (8+ chars here, upper, lower, digit, symbol).
-
-`InitialIdentity` (in `Data/Migrations`) creates the ASP.NET Core Identity tables.
-There are no business entities yet.
+Changing the password in config does **not** update users that already exist. Delete them and
+restart, or change the password through Identity.
 
 ## Frontend
 

@@ -42,7 +42,36 @@ public static class ServiceCollectionExtensions
                 options.SignIn.RequireConfirmedAccount = false;
             })
             .AddRoles<IdentityRole>()
-            .AddEntityFrameworkStores<ForgeFlowDbContext>();
+            .AddEntityFrameworkStores<ForgeFlowDbContext>()
+            .AddSignInManager();
+
+        services
+            .AddAuthentication(IdentityConstants.ApplicationScheme)
+            .AddIdentityCookies();
+
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.Cookie.Name = "ForgeFlow.Auth";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
+            // The SPA is served from a different origin, so the cookie must be cross-site.
+            options.Cookie.SameSite = SameSiteMode.None;
+            options.ExpireTimeSpan = TimeSpan.FromHours(8);
+            options.SlidingExpiration = true;
+
+            // An API answers with status codes; it never redirects to a login page.
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            };
+        });
 
         services.Configure<IdentitySeedOptions>(
             configuration.GetSection(IdentitySeedOptions.SectionName));
@@ -79,6 +108,7 @@ public static class ServiceCollectionExtensions
             options.AddDefaultPolicy(policy => policy
                 .WithOrigins(allowedOrigins)
                 .AllowAnyHeader()
-                .AllowAnyMethod()));
+                .AllowAnyMethod()
+                .AllowCredentials()));
     }
 }

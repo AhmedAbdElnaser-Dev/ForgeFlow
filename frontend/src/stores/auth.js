@@ -1,21 +1,35 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import * as authService from '@/services/authService'
 
-const SESSION_KEY = 'forgeflow.authenticated'
-
-// Placeholder session state until the Autodesk OAuth flow replaces it.
 export const useAuthStore = defineStore('auth', () => {
-  const isAuthenticated = ref(sessionStorage.getItem(SESSION_KEY) === 'true')
+  const user = ref(null)
+  const isSessionRestored = ref(false)
 
-  function signIn() {
-    isAuthenticated.value = true
-    sessionStorage.setItem(SESSION_KEY, 'true')
+  const isAuthenticated = computed(() => user.value !== null)
+
+  /** Asks the API who we are. Runs once per page load, before the first guarded route. */
+  async function restoreSession() {
+    if (isSessionRestored.value) {
+      return
+    }
+
+    try {
+      user.value = await authService.getCurrentUser()
+    } finally {
+      isSessionRestored.value = true
+    }
   }
 
-  function signOut() {
-    isAuthenticated.value = false
-    sessionStorage.removeItem(SESSION_KEY)
+  async function signIn(credentials) {
+    user.value = await authService.login(credentials)
+    isSessionRestored.value = true
   }
 
-  return { isAuthenticated, signIn, signOut }
+  async function signOut() {
+    await authService.logout()
+    user.value = null
+  }
+
+  return { user, isAuthenticated, isSessionRestored, restoreSession, signIn, signOut }
 })

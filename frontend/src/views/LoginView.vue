@@ -1,5 +1,45 @@
 <script setup>
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AutodeskMark from '@/components/AutodeskMark.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
+const router = useRouter()
+const route = useRoute()
+
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const isSubmitting = ref(false)
+const errorMessage = ref('')
+const form = ref(null)
+
+const emailRules = [
+  (value) => !!value || 'Email is required',
+  (value) => /.+@.+\..+/.test(value) || 'Enter a valid email',
+]
+const passwordRules = [(value) => !!value || 'Password is required']
+
+async function onSubmit() {
+  const { valid } = await form.value.validate()
+  if (!valid) {
+    return
+  }
+
+  isSubmitting.value = true
+  errorMessage.value = ''
+
+  try {
+    await auth.signIn({ email: email.value, password: password.value })
+    await router.replace(route.query.redirect || { name: 'home' })
+  } catch (error) {
+    errorMessage.value =
+      error.response?.data?.detail ?? 'Could not sign in. Please try again.'
+  } finally {
+    isSubmitting.value = false
+  }
+}
 
 function onLoginWithAutodesk() {
   console.log('Autodesk login triggered')
@@ -17,11 +57,65 @@ function onLoginWithAutodesk() {
 
       <h1 class="login__wordmark">Forge<span class="text-primary">Flow</span></h1>
 
+      <v-alert
+        v-if="errorMessage"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mb-5 text-start"
+      >
+        {{ errorMessage }}
+      </v-alert>
+
+      <v-form ref="form" class="text-start" @submit.prevent="onSubmit">
+        <v-text-field
+          v-model="email"
+          label="Email"
+          type="email"
+          autocomplete="username"
+          variant="outlined"
+          density="comfortable"
+          prepend-inner-icon="mdi-email-outline"
+          :rules="emailRules"
+          :disabled="isSubmitting"
+        />
+
+        <v-text-field
+          v-model="password"
+          label="Password"
+          :type="showPassword ? 'text' : 'password'"
+          autocomplete="current-password"
+          variant="outlined"
+          density="comfortable"
+          prepend-inner-icon="mdi-lock-outline"
+          :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+          :rules="passwordRules"
+          :disabled="isSubmitting"
+          @click:append-inner="showPassword = !showPassword"
+        />
+
+        <v-btn
+          type="submit"
+          class="login__button"
+          color="primary"
+          block
+          height="48"
+          :loading="isSubmitting"
+        >
+          Sign in
+        </v-btn>
+      </v-form>
+
+      <div class="login__divider">
+        <span>or</span>
+      </div>
+
       <v-btn
-        class="login__button"
-        color="primary"
+        class="login__autodesk"
+        variant="outlined"
         block
         height="48"
+        :disabled="isSubmitting"
         @click="onLoginWithAutodesk"
       >
         <template #prepend>
@@ -80,7 +174,7 @@ function onLoginWithAutodesk() {
   position: relative;
   width: 100%;
   max-width: 384px;
-  padding: 52px 40px 40px;
+  padding: 44px 36px 36px;
   text-align: center;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.14);
@@ -102,7 +196,7 @@ function onLoginWithAutodesk() {
 }
 
 .login__wordmark {
-  margin-bottom: 36px;
+  margin-bottom: 28px;
   font-size: 2rem;
   font-weight: 600;
   letter-spacing: -0.03em;
@@ -110,30 +204,33 @@ function onLoginWithAutodesk() {
 }
 
 .login__button {
+  margin-top: 4px;
   font-weight: 600;
   letter-spacing: 0;
   box-shadow: 0 12px 28px -14px rgba(34, 197, 94, 0.9);
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
 }
 
-.login__button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 34px -14px rgba(34, 197, 94, 1);
+.login__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(245, 245, 245, 0.45);
 }
 
-.login__button:active {
-  transform: translateY(0);
+.login__divider::before,
+.login__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.18);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .login__button {
-    transition: none;
-  }
-
-  .login__button:hover {
-    transform: none;
-  }
+.login__autodesk {
+  font-weight: 600;
+  letter-spacing: 0;
 }
 </style>

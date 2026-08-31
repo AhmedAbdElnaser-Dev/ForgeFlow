@@ -29,59 +29,62 @@ public static class IdentitySeeder
         foreach (var seedUser in seed.Users)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            if (string.IsNullOrWhiteSpace(seedUser.Email))
-            {
-                logger.LogWarning("Skipped a seed user with no email address.");
-                continue;
-            }
-
-            await EnsureRoleAsync(roleManager, seedUser.Role);
-
-            if (await userManager.FindByEmailAsync(seedUser.Email) is not null)
-            {
-                continue;
-            }
-
-            var password = string.IsNullOrWhiteSpace(seedUser.Password)
-                ? PasswordGenerator.Generate()
-                : seedUser.Password;
-
-            var user = new ApplicationUser
-            {
-                UserName = seedUser.Email,
-                Email = seedUser.Email,
-                EmailConfirmed = true,
-            };
-
-            var result = await userManager.CreateAsync(user, password);
-            if (!result.Succeeded)
-            {
-                logger.LogError(
-                    "Failed to seed {Email}: {Errors}",
-                    seedUser.Email,
-                    string.Join("; ", result.Errors.Select(error => error.Description)));
-                continue;
-            }
-
-            if (!string.IsNullOrWhiteSpace(seedUser.Role))
-            {
-                await userManager.AddToRoleAsync(user, seedUser.Role);
-            }
-
-            if (string.IsNullOrWhiteSpace(seedUser.Password))
-            {
-                // Only chance to see a generated password: it is stored hashed.
-                logger.LogWarning(
-                    "Seeded {Email} with generated password: {Password}",
-                    seedUser.Email,
-                    password);
-            }
-            else
-            {
-                logger.LogInformation("Seeded {Email} with the configured password.", seedUser.Email);
-            }
+            await SeedUserAsync(seedUser, seed.DefaultPassword, userManager, roleManager, logger);
         }
+    }
+
+    private static async Task SeedUserAsync(
+        SeedUser seedUser,
+        string defaultPassword,
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        ILogger logger)
+    {
+        if (string.IsNullOrWhiteSpace(seedUser.Email))
+        {
+            logger.LogWarning("Skipped a seed user with no email address.");
+            return;
+        }
+
+        var password = string.IsNullOrWhiteSpace(seedUser.Password) ? defaultPassword : seedUser.Password;
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            logger.LogWarning(
+                "Skipped {Email}: no password and IdentitySeed:DefaultPassword is not set.",
+                seedUser.Email);
+            return;
+        }
+
+        await EnsureRoleAsync(roleManager, seedUser.Role);
+
+        if (await userManager.FindByEmailAsync(seedUser.Email) is not null)
+        {
+            return;
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = seedUser.Email,
+            Email = seedUser.Email,
+            EmailConfirmed = true,
+        };
+
+        var result = await userManager.CreateAsync(user, password);
+        if (!result.Succeeded)
+        {
+            logger.LogError(
+                "Failed to seed {Email}: {Errors}",
+                seedUser.Email,
+                string.Join("; ", result.Errors.Select(error => error.Description)));
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(seedUser.Role))
+        {
+            await userManager.AddToRoleAsync(user, seedUser.Role);
+        }
+
+        logger.LogInformation("Seeded {Email} in role {Role}.", seedUser.Email, seedUser.Role ?? "none");
     }
 
     private static async Task EnsureRoleAsync(RoleManager<IdentityRole> roleManager, string? role)

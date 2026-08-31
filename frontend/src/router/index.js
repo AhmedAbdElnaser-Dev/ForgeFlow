@@ -19,11 +19,14 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
+  // The cookie lives in the browser, so on a fresh load only the API knows who we are.
+  await auth.restoreSession()
+
   if (!to.meta.public && !auth.isAuthenticated) {
-    return { name: 'login' }
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 
   if (to.name === 'login' && auth.isAuthenticated) {
