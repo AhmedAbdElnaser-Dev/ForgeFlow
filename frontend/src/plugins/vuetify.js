@@ -55,5 +55,11 @@ export default createVuetify({
       rounded: 'lg',
       class: 'text-none',
     },
+    VDataTable: {
+      fixedHeader: true,
+      fixedFooter: true,
+      hover: true,
+      density: 'comfortable',
+    },
   },
 })

@@ -119,8 +119,8 @@ onMounted(loadBuckets)
 </script>
 
 <template>
-  <v-container class="py-8">
-    <v-card>
+  <v-container fluid class="fill-height align-start pa-4">
+    <v-card class="d-flex flex-column w-100 h-100">
       <v-toolbar color="surface" density="comfortable">
         <v-toolbar-title class="text-subtitle-1 font-weight-medium">Buckets</v-toolbar-title>
 
@@ -147,28 +147,26 @@ onMounted(loadBuckets)
         </template>
       </v-alert>
 
+      <v-text-field
+        v-model="search"
+        placeholder="Filter buckets"
+        prepend-inner-icon="mdi-magnify"
+        variant="solo-filled"
+        density="compact"
+        flat
+        hide-details
+        clearable
+        class="ma-3 flex-0-0"
+      />
+
       <v-data-table
+        class="buckets__table"
         :headers="headers"
         :items="buckets"
         :search="search"
         :loading="isLoading"
         item-value="bucketKey"
-        hover
       >
-        <template #top>
-          <v-text-field
-            v-model="search"
-            placeholder="Filter buckets"
-            prepend-inner-icon="mdi-magnify"
-            variant="solo-filled"
-            density="compact"
-            flat
-            hide-details
-            clearable
-            class="ma-3"
-          />
-        </template>
-
         <template #[`item.bucketKey`]="{ item }">
           <span class="text-body-2">{{ item.bucketKey }}</span>
         </template>
@@ -294,3 +292,19 @@ onMounted(loadBuckets)
     <v-snackbar v-model="isNoticeOpen" :color="noticeColor" :timeout="4000" :text="notice" />
   </v-container>
 </template>
+
+<style scoped>
+/* The table fills what the toolbar and filter leave behind. min-height lets it shrink
+   below its content, which is what makes the body scroll instead of the page. */
+.buckets__table {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.buckets__table :deep(.v-table__wrapper) {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+</style>
