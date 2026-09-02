@@ -9,9 +9,6 @@ using Microsoft.Extensions.Options;
 
 namespace ForgeFlow.Api.Extensions;
 
-/// <summary>
-/// Groups registration by feature so Program.cs stays a readable outline.
-/// </summary>
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddForgeFlowDatabase(
@@ -93,6 +90,7 @@ public static class ServiceCollectionExtensions
 
         // Singleton so the cached access token is shared across requests.
         services.AddSingleton<IAutodeskTokenService, AutodeskTokenService>();
+        services.AddScoped<IBucketService, BucketService>();
         services.AddSingleton<AutodeskMapper>();
 
         return services;

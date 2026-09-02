@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using ForgeFlow.Api.Contracts;
 using ForgeFlow.Api.Identity;
-using ForgeFlow.Api.Mapping;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,11 +9,8 @@ namespace ForgeFlow.Api.Controllers;
 
 public class AuthController(
     SignInManager<ApplicationUser> signInManager,
-    UserManager<ApplicationUser> userManager,
-    AutodeskMapper mapper,
-    IWebHostEnvironment environment) : ApiControllerBase
+    UserManager<ApplicationUser> userManager) : ApiControllerBase
 {
-    /// <summary>Signs the user in with email and password, issuing the auth cookie.</summary>
     [HttpPost("login")]
     [ProducesResponseType<CurrentUserDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -51,7 +47,6 @@ public class AuthController(
         return Ok(await BuildCurrentUserAsync(user));
     }
 
-    /// <summary>Clears the auth cookie.</summary>
     [HttpPost("logout")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -61,7 +56,6 @@ public class AuthController(
         return NoContent();
     }
 
-    /// <summary>The signed-in user, used by the SPA to restore session state on load.</summary>
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType<CurrentUserDto>(StatusCodes.Status200OK)]
@@ -77,19 +71,6 @@ public class AuthController(
         }
 
         return Ok(await BuildCurrentUserAsync(user));
-    }
-
-    [HttpGet("/Autodesk2LeggedToken")]
-    public async Task<ActionResult<AutodeskTokenDto>> GetAutodeskToken(CancellationToken cancellationToken)
-    {
-        if (!environment.IsDevelopment())
-        {
-            return NotFound();
-        }
-
-        var token = await GetAutodeskTokenAsync(cancellationToken);
-
-        return Ok(mapper.ToDto(token));
     }
 
     private static ProblemDetails InvalidCredentials => new()

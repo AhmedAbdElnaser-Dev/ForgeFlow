@@ -5,10 +5,6 @@ using Microsoft.Extensions.Options;
 
 namespace ForgeFlow.Api.Data.Seeding;
 
-/// <summary>
-/// Creates the configured development users and their roles. Existing users are left alone,
-/// so re-running is safe and never rewrites a password.
-/// </summary>
 public static class IdentitySeeder
 {
     public static async Task SeedAsync(IServiceProvider services, CancellationToken cancellationToken = default)
