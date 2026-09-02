@@ -27,6 +27,9 @@ Legend: `[x]` done · `[ ]` not started · **2L** two-legged · **3L** three-leg
 - [x] **2L** Credentials in configuration, real values in user secrets
 - [x] **2L** Development endpoint to inspect the token
 - [ ] **2L** Scope-aware tokens — one cache per scope, so `viewables:read` and `code:all` coexist
+  - [x] `AutodeskScope` flags enum with wire-format conversion
+  - [x] Token service requests scopes as flags, parsed from configuration
+  - [ ] Cache and lock per scope, and a scope argument on the service
   - Blocks every feature below that needs a scope other than `data:read`
 - [ ] **2L** Short-lived viewer token endpoint for the browser (`viewables:read`, ~10 min, behind Identity login)
 - [ ] **3L** Authorization-code login — makes the "Login with Autodesk" button real

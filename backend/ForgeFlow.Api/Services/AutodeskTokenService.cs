@@ -24,6 +24,7 @@ public class AutodeskTokenService(
     private static readonly TimeSpan RenewBefore = TimeSpan.FromSeconds(60);
 
     private readonly AutodeskOptions _options = options.Value;
+    private readonly AutodeskScope _scopes = AutodeskScopes.Parse(options.Value.Scopes);
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
     private AutodeskAccessToken? _token;
@@ -77,7 +78,8 @@ public class AutodeskTokenService(
             ?? throw new HttpRequestException("Autodesk token response was empty.");
 
         logger.LogInformation(
-            "Retrieved Autodesk access token, valid for {ExpiresIn}s.",
+            "Retrieved Autodesk access token for [{Scopes}], valid for {ExpiresIn}s.",
+            _scopes.ToWireFormat(),
             payload.ExpiresIn);
 
         return new AutodeskAccessToken(
@@ -88,6 +90,12 @@ public class AutodeskTokenService(
 
     private HttpRequestMessage CreateTokenRequest()
     {
+        if (_scopes == AutodeskScope.None)
+        {
+            throw new InvalidOperationException(
+                $"Autodesk:Scopes contains no recognised scope (value: '{_options.Scopes}').");
+        }
+
         var request = new HttpRequestMessage(HttpMethod.Post, TokenPath);
 
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", EncodeCredentials());
@@ -95,7 +103,7 @@ public class AutodeskTokenService(
         request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["grant_type"] = "client_credentials",
-            ["scope"] = _options.Scopes,
+            ["scope"] = _scopes.ToWireFormat(),
         });
 
         return request;

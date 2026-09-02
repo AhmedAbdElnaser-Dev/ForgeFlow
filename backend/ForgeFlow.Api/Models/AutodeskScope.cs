@@ -47,4 +47,28 @@ public static class AutodeskScopes
     /// <summary>Space-separated scope list, the format the token endpoint expects.</summary>
     public static string ToWireFormat(this AutodeskScope scopes) =>
         string.Join(' ', WireValues.Where(entry => scopes.HasFlag(entry.Flag)).Select(entry => entry.Value));
+
+    /// <summary>
+    /// Reads the wire format back into flags, for values that arrive from configuration.
+    /// Unknown entries are ignored, so a typo can only narrow the scope, never widen it.
+    /// </summary>
+    public static AutodeskScope Parse(string? scopes)
+    {
+        var parsed = AutodeskScope.None;
+
+        if (string.IsNullOrWhiteSpace(scopes))
+        {
+            return parsed;
+        }
+
+        foreach (var value in scopes.Split([' ', ','], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var match = WireValues.FirstOrDefault(entry =>
+                string.Equals(entry.Value, value, StringComparison.OrdinalIgnoreCase));
+
+            parsed |= match.Flag;
+        }
+
+        return parsed;
+    }
 }
