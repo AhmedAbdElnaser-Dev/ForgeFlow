@@ -10,9 +10,9 @@ const headers = [
 ]
 
 const retentionOptions = [
-  { title: 'Transient', subtitle: 'Deleted after 24 hours', value: 'Transient' },
-  { title: 'Temporary', subtitle: 'Deleted after 30 days', value: 'Temporary' },
-  { title: 'Persistent', subtitle: 'Kept until deleted', value: 'Persistent' },
+  { title: 'Transient — deleted after 24 hours', value: 'Transient' },
+  { title: 'Temporary — deleted after 30 days', value: 'Temporary' },
+  { title: 'Persistent — kept until deleted', value: 'Persistent' },
 ]
 
 const retentionColors = {
@@ -246,11 +246,7 @@ onMounted(loadBuckets)
               class="mt-6"
               persistent-hint
               hint="Fixed at creation and cannot be changed later."
-            >
-              <template #item="{ props, item }">
-                <v-list-item v-bind="props" :subtitle="item.raw.subtitle" />
-              </template>
-            </v-select>
+            />
           </v-form>
         </v-card-text>
 
