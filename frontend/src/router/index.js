@@ -12,6 +12,17 @@ const router = createRouter({
       meta: { title: 'Profile', icon: 'mdi-account-outline', nav: true },
     },
     {
+      path: '/buckets',
+      name: 'buckets',
+      component: () => import('@/views/BucketsView.vue'),
+      meta: {
+        title: 'Buckets',
+        icon: 'mdi-database-outline',
+        nav: true,
+        roles: ['Admin'],
+      },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
@@ -31,6 +42,11 @@ router.beforeEach(async (to) => {
   }
 
   if (to.name === 'login' && auth.isAuthenticated) {
+    return { name: 'profile' }
+  }
+
+  // Hiding a nav link is not access control; the route has to check as well.
+  if (to.meta.roles && !auth.hasAnyRole(to.meta.roles)) {
     return { name: 'profile' }
   }
 

@@ -15,7 +15,10 @@ const showNavigation = computed(() => !route.meta.public)
 const isRail = computed(() => !mdAndUp.value)
 
 const navigationItems = computed(() =>
-  router.getRoutes().filter((candidate) => candidate.meta.nav),
+  router
+    .getRoutes()
+    .filter((candidate) => candidate.meta.nav)
+    .filter((candidate) => !candidate.meta.roles || auth.hasAnyRole(candidate.meta.roles)),
 )
 
 const initials = computed(() => auth.user?.email?.slice(0, 2).toUpperCase() ?? '')

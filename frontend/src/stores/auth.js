@@ -8,6 +8,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => user.value !== null)
 
+  function hasAnyRole(roles) {
+    return roles.some((role) => user.value?.roles?.includes(role))
+  }
+
   /** Asks the API who we are. Runs once per page load, before the first guarded route. */
   async function restoreSession() {
     if (isSessionRestored.value) {
@@ -31,5 +35,5 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, isAuthenticated, isSessionRestored, restoreSession, signIn, signOut }
+  return { user, isAuthenticated, isSessionRestored, hasAnyRole, restoreSession, signIn, signOut }
 })

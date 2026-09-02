@@ -25,8 +25,10 @@ const forgeflowDark = {
     error: '#F87171',
   },
   variables: {
-    'border-color': '#232C3A',
-    'border-opacity': 1,
+    // Borders are drawn as rgba(border-color, border-opacity); a light hue at low
+    // opacity reads as a hairline instead of a hard line.
+    'border-color': '#FFFFFF',
+    'border-opacity': 0.08,
     'medium-emphasis-opacity': 0.72,
     'disabled-opacity': 0.38,
   },
