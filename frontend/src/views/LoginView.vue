@@ -12,8 +12,10 @@ const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const isSubmitting = ref(false)
-const errorMessage = ref('')
 const form = ref(null)
+
+const notice = ref('')
+const isNoticeOpen = ref(false)
 
 const emailRules = [
   (value) => !!value || 'Email is required',
@@ -28,14 +30,13 @@ async function onSubmit() {
   }
 
   isSubmitting.value = true
-  errorMessage.value = ''
 
   try {
     await auth.signIn({ email: email.value, password: password.value })
     await router.replace(route.query.redirect || { name: 'profile' })
   } catch (error) {
-    errorMessage.value =
-      error.response?.data?.detail ?? 'Could not sign in. Please try again.'
+    notice.value = error.response?.data?.detail ?? 'Could not sign in. Please try again.'
+    isNoticeOpen.value = true
   } finally {
     isSubmitting.value = false
   }
@@ -56,16 +57,6 @@ function onLoginWithAutodesk() {
       <span class="login__seam" aria-hidden="true" />
 
       <h1 class="login__wordmark">Forge<span class="text-primary">Flow</span></h1>
-
-      <v-alert
-        v-if="errorMessage"
-        type="error"
-        variant="tonal"
-        density="compact"
-        class="mb-5 text-start"
-      >
-        {{ errorMessage }}
-      </v-alert>
 
       <v-form ref="form" class="text-start" @submit.prevent="onSubmit">
         <v-text-field
@@ -124,6 +115,8 @@ function onLoginWithAutodesk() {
         Login with Autodesk
       </v-btn>
     </div>
+
+    <v-snackbar v-model="isNoticeOpen" color="error" :timeout="5000" :text="notice" />
   </div>
 </template>
 

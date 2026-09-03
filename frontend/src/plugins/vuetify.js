@@ -55,6 +55,10 @@ export default createVuetify({
       rounded: 'lg',
       class: 'text-none',
     },
+    VSnackbar: {
+      location: 'top',
+      timeout: 4000,
+    },
     VDataTable: {
       fixedHeader: true,
       fixedFooter: true,
