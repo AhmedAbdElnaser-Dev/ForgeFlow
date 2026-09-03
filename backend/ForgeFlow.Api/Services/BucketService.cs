@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Headers;
 using ForgeFlow.Api.Contracts;
 using ForgeFlow.Api.Data;
 using ForgeFlow.Api.Data.Entities;
@@ -11,8 +10,7 @@ using Microsoft.Extensions.Options;
 namespace ForgeFlow.Api.Services;
 
 public class BucketService(
-    IHttpClientFactory httpClientFactory,
-    IAutodeskTokenService tokenService,
+    IAutodeskApiClient autodesk,
     ForgeFlowDbContext database,
     IOptions<AutodeskOptions> options,
     ILogger<BucketService> logger) : IBucketService
@@ -23,11 +21,9 @@ public class BucketService(
 
     public async Task<IReadOnlyList<BucketDto>> ListAsync(CancellationToken cancellationToken = default)
     {
-        using var response = await SendAsync(
-            HttpMethod.Get,
+        using var response = await autodesk.GetAsync(
             BucketsPath,
             AutodeskScope.BucketRead,
-            content: null,
             cancellationToken);
 
         await EnsureSuccessAsync(response, cancellationToken);
@@ -59,12 +55,10 @@ public class BucketService(
             PolicyKey = retention.ToString().ToLowerInvariant(),
         };
 
-        using var content = JsonContent.Create(body);
-        using var response = await SendAsync(
-            HttpMethod.Post,
+        using var response = await autodesk.PostJsonAsync(
             BucketsPath,
+            body,
             AutodeskScope.BucketCreate,
-            content,
             cancellationToken);
 
         await EnsureSuccessAsync(response, cancellationToken);
@@ -79,11 +73,9 @@ public class BucketService(
 
     public async Task DeleteAsync(string bucketKey, CancellationToken cancellationToken = default)
     {
-        using var response = await SendAsync(
-            HttpMethod.Delete,
+        using var response = await autodesk.DeleteAsync(
             $"{BucketsPath}/{bucketKey}",
             AutodeskScope.BucketDelete,
-            content: null,
             cancellationToken);
 
         await EnsureSuccessAsync(response, cancellationToken);
@@ -123,23 +115,6 @@ public class BucketService(
     public Task<bool> IsActiveAsync(string bucketKey, CancellationToken cancellationToken = default) =>
         database.Buckets
             .AnyAsync(entry => entry.BucketKey == bucketKey && entry.IsActive, cancellationToken);
-
-    private async Task<HttpResponseMessage> SendAsync(
-        HttpMethod method,
-        string path,
-        AutodeskScope scopes,
-        HttpContent? content,
-        CancellationToken cancellationToken)
-    {
-        var bearer = await tokenService.GetAccessTokenAsync(scopes, cancellationToken);
-
-        using var request = new HttpRequestMessage(method, path) { Content = content };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
-
-        var client = httpClientFactory.CreateClient(AutodeskTokenService.HttpClientName);
-
-        return await client.SendAsync(request, cancellationToken);
-    }
 
     // Bucket names are unique across all of Autodesk, so prefix them with the client id.
     private string BuildBucketKey(string name) =>

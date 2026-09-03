@@ -90,6 +90,7 @@ public static class ServiceCollectionExtensions
 
         // Singleton so the cached access token is shared across requests.
         services.AddSingleton<IAutodeskTokenService, AutodeskTokenService>();
+        services.AddSingleton<IAutodeskApiClient, AutodeskApiClient>();
         services.AddScoped<IBucketService, BucketService>();
         services.AddSingleton<AutodeskMapper>();
 
