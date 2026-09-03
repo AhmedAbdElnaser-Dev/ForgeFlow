@@ -10,6 +10,10 @@ export async function createBucket({ name, retention }) {
   return data
 }
 
+export async function setBucketActivation(bucketKey, isActive) {
+  await httpClient.put(`/buckets/${encodeURIComponent(bucketKey)}/activation`, { isActive })
+}
+
 export async function deleteBucket(bucketKey) {
   await httpClient.delete(`/buckets/${encodeURIComponent(bucketKey)}`)
 }

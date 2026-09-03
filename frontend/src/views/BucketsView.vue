@@ -4,6 +4,7 @@ import * as bucketService from '@/services/bucketService'
 
 const headers = [
   { title: 'Bucket', key: 'bucketKey' },
+  { title: 'Active', key: 'isActive', width: 130, align: 'center' },
   { title: 'Retention', key: 'policyKey', width: 150 },
   { title: 'Created', key: 'createdAtUtc', width: 210 },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end', width: 90 },
@@ -28,10 +29,10 @@ const search = ref('')
 
 const isCreateOpen = ref(false)
 const isCreating = ref(false)
-const createError = ref('')
 const createForm = ref(null)
 const newBucket = ref({ name: '', retention: 'Transient' })
 
+const togglingKey = ref('')
 const bucketToDelete = ref(null)
 const isDeleting = ref(false)
 
@@ -52,7 +53,15 @@ function showNotice(message, color = 'success') {
 }
 
 function messageFrom(error, fallback) {
-  return error.response?.data?.detail ?? error.response?.data?.title ?? fallback
+  const problem = error.response?.data
+  const message = problem?.detail ?? problem?.title
+
+  if (message) {
+    return message
+  }
+
+  // No ProblemDetails came back, so say what actually happened instead of a bare fallback.
+  return error.response ? `${fallback} (HTTP ${error.response.status})` : `${fallback} (no response)`
 }
 
 async function loadBuckets() {
@@ -70,7 +79,6 @@ async function loadBuckets() {
 
 function openCreate() {
   newBucket.value = { name: '', retention: 'Transient' }
-  createError.value = ''
   isCreateOpen.value = true
 }
 
@@ -81,7 +89,6 @@ async function submitCreate() {
   }
 
   isCreating.value = true
-  createError.value = ''
 
   try {
     const created = await bucketService.createBucket(newBucket.value)
@@ -89,9 +96,25 @@ async function submitCreate() {
     isCreateOpen.value = false
     showNotice(`Created ${created.bucketKey}`)
   } catch (error) {
-    createError.value = messageFrom(error, 'Could not create the bucket.')
+    showNotice(messageFrom(error, 'Could not create the bucket.'), 'error')
   } finally {
     isCreating.value = false
+  }
+}
+
+async function toggleActivation(bucket) {
+  const previous = bucket.isActive
+  bucket.isActive = !previous
+  togglingKey.value = bucket.bucketKey
+
+  try {
+    await bucketService.setBucketActivation(bucket.bucketKey, bucket.isActive)
+    showNotice(bucket.isActive ? `Activated ${bucket.bucketKey}` : `Deactivated ${bucket.bucketKey}`)
+  } catch (error) {
+    bucket.isActive = previous
+    showNotice(messageFrom(error, 'Could not change activation.'), 'error')
+  } finally {
+    togglingKey.value = ''
   }
 }
 
@@ -171,6 +194,20 @@ onMounted(loadBuckets)
           <span class="text-body-2">{{ item.bucketKey }}</span>
         </template>
 
+        <template #[`item.isActive`]="{ item }">
+          <v-chip
+            :color="item.isActive ? 'primary' : 'secondary'"
+            :variant="item.isActive ? 'flat' : 'outlined'"
+            :prepend-icon="item.isActive ? 'mdi-check-circle' : 'mdi-circle-outline'"
+            :disabled="togglingKey === item.bucketKey"
+            :text="item.isActive ? 'Active' : 'Inactive'"
+            size="small"
+            link
+            :aria-label="`${item.isActive ? 'Deactivate' : 'Activate'} ${item.bucketKey}`"
+            @click="toggleActivation(item)"
+          />
+        </template>
+
         <template #[`item.policyKey`]="{ item }">
           <v-chip
             :color="retentionColors[item.policyKey]"
@@ -216,15 +253,6 @@ onMounted(loadBuckets)
     <v-dialog v-model="isCreateOpen" max-width="460">
       <v-card title="New bucket">
         <v-card-text>
-          <v-alert
-            v-if="createError"
-            type="error"
-            variant="tonal"
-            density="compact"
-            class="mb-4"
-            :text="createError"
-          />
-
           <v-form ref="createForm" @submit.prevent="submitCreate">
             <v-text-field
               v-model="newBucket.name"

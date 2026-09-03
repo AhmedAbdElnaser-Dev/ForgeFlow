@@ -13,4 +13,8 @@ public interface IBucketService
         CancellationToken cancellationToken = default);
 
     Task DeleteAsync(string bucketKey, CancellationToken cancellationToken = default);
+
+    Task SetActivationAsync(string bucketKey, bool isActive, CancellationToken cancellationToken = default);
+
+    Task<bool> IsActiveAsync(string bucketKey, CancellationToken cancellationToken = default);
 }

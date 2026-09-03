@@ -1,8 +1,11 @@
 using System.Net;
 using System.Net.Http.Headers;
 using ForgeFlow.Api.Contracts;
+using ForgeFlow.Api.Data;
+using ForgeFlow.Api.Data.Entities;
 using ForgeFlow.Api.Models;
 using ForgeFlow.Api.Options;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace ForgeFlow.Api.Services;
@@ -10,6 +13,7 @@ namespace ForgeFlow.Api.Services;
 public class BucketService(
     IHttpClientFactory httpClientFactory,
     IAutodeskTokenService tokenService,
+    ForgeFlowDbContext database,
     IOptions<AutodeskOptions> options,
     ILogger<BucketService> logger) : IBucketService
 {
@@ -29,8 +33,19 @@ public class BucketService(
         await EnsureSuccessAsync(response, cancellationToken);
 
         var payload = await response.Content.ReadFromJsonAsync<AutodeskBucketListResponse>(cancellationToken);
+        if (payload is null)
+        {
+            return [];
+        }
 
-        return payload?.Items.Select(ToDto).ToList() ?? [];
+        var activeKeys = await database.Buckets
+            .Where(bucket => bucket.IsActive)
+            .Select(bucket => bucket.BucketKey)
+            .ToListAsync(cancellationToken);
+
+        return payload.Items
+            .Select(bucket => ToDto(bucket, activeKeys.Contains(bucket.BucketKey)))
+            .ToList();
     }
 
     public async Task<BucketDto> CreateAsync(
@@ -59,7 +74,7 @@ public class BucketService(
 
         logger.LogInformation("Created Autodesk bucket {BucketKey}.", created.BucketKey);
 
-        return ToDto(created);
+        return ToDto(created, isActive: false);
     }
 
     public async Task DeleteAsync(string bucketKey, CancellationToken cancellationToken = default)
@@ -73,8 +88,41 @@ public class BucketService(
 
         await EnsureSuccessAsync(response, cancellationToken);
 
+        await database.Buckets
+            .Where(bucket => bucket.BucketKey == bucketKey)
+            .ExecuteDeleteAsync(cancellationToken);
+
         logger.LogInformation("Deleted Autodesk bucket {BucketKey}.", bucketKey);
     }
+
+    public async Task SetActivationAsync(
+        string bucketKey,
+        bool isActive,
+        CancellationToken cancellationToken = default)
+    {
+        var bucket = await database.Buckets
+            .FirstOrDefaultAsync(entry => entry.BucketKey == bucketKey, cancellationToken);
+
+        if (bucket is null)
+        {
+            bucket = new Bucket { BucketKey = bucketKey };
+            database.Buckets.Add(bucket);
+        }
+
+        bucket.IsActive = isActive;
+        bucket.UpdatedAtUtc = DateTimeOffset.UtcNow;
+
+        await database.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation(
+            "Bucket {BucketKey} is now {State}.",
+            bucketKey,
+            isActive ? "active" : "inactive");
+    }
+
+    public Task<bool> IsActiveAsync(string bucketKey, CancellationToken cancellationToken = default) =>
+        database.Buckets
+            .AnyAsync(entry => entry.BucketKey == bucketKey && entry.IsActive, cancellationToken);
 
     private async Task<HttpResponseMessage> SendAsync(
         HttpMethod method,
@@ -117,10 +165,11 @@ public class BucketService(
         };
     }
 
-    private static BucketDto ToDto(AutodeskBucketResponse bucket) => new()
+    private static BucketDto ToDto(AutodeskBucketResponse bucket, bool isActive) => new()
     {
         BucketKey = bucket.BucketKey,
         PolicyKey = bucket.PolicyKey,
+        IsActive = isActive,
         CreatedAtUtc = bucket.CreatedDate is null
             ? null
             : DateTimeOffset.FromUnixTimeMilliseconds(bucket.CreatedDate.Value),
