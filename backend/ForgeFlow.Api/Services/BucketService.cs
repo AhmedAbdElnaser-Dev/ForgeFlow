@@ -157,6 +157,7 @@ public class BucketService(
         {
             HttpStatusCode.Conflict => new BucketAlreadyExistsException(body),
             HttpStatusCode.NotFound => new BucketNotFoundException(body),
+            HttpStatusCode.Forbidden => new BucketAccessDeniedException(body),
             _ => new HttpRequestException(
                 $"Autodesk bucket request failed with {(int)response.StatusCode}: {body}"),
         };

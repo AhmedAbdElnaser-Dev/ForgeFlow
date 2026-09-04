@@ -63,5 +63,14 @@ public class BucketsController(IBucketService buckets) : ApiControllerBase
         {
             return NotFound();
         }
+        catch (BucketAccessDeniedException)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ProblemDetails
+            {
+                Title = "Bucket belongs to another application",
+                Detail = $"'{name}' is not owned by this Autodesk application.",
+                Status = StatusCodes.Status403Forbidden,
+            });
+        }
     }
 }
