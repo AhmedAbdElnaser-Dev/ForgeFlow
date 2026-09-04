@@ -34,7 +34,7 @@ const breadcrumbs = computed(() => {
     }
 
     trail.unshift({
-      title: name === route.name && route.params.bucketKey ? route.params.bucketKey : match.meta.title,
+      title: name === route.name && route.params.name ? route.params.name : match.meta.title,
       to: { name, params: route.params },
       disabled: name === route.name,
     })

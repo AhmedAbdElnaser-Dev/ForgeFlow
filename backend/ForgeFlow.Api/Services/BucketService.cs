@@ -78,8 +78,10 @@ public class BucketService(
         return ToDto(created, isActive: false);
     }
 
-    public async Task DeleteAsync(string bucketKey, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(string name, CancellationToken cancellationToken = default)
     {
+        var bucketKey = BuildBucketKey(name);
+
         using var response = await autodesk.DeleteAsync(
             $"{BucketsPath}/{bucketKey}",
             AutodeskScope.BucketDelete,
@@ -95,10 +97,12 @@ public class BucketService(
     }
 
     public async Task SetActivationAsync(
-        string bucketKey,
+        string name,
         bool isActive,
         CancellationToken cancellationToken = default)
     {
+        var bucketKey = BuildBucketKey(name);
+
         var bucket = await database.Buckets
             .FirstOrDefaultAsync(entry => entry.BucketKey == bucketKey, cancellationToken);
 
@@ -119,13 +123,24 @@ public class BucketService(
             isActive ? "active" : "inactive");
     }
 
-    public Task<bool> IsActiveAsync(string bucketKey, CancellationToken cancellationToken = default) =>
-        database.Buckets
+    public Task<bool> IsActiveAsync(string name, CancellationToken cancellationToken = default)
+    {
+        var bucketKey = BuildBucketKey(name);
+
+        return database.Buckets
             .AnyAsync(entry => entry.BucketKey == bucketKey && entry.IsActive, cancellationToken);
+    }
 
     // Bucket names are unique across all of Autodesk, so prefix them with the client id.
-    private string BuildBucketKey(string name) =>
-        $"{_options.ClientId.ToLowerInvariant()}-{name.ToLowerInvariant()}";
+    private string KeyPrefix => $"{_options.ClientId.ToLowerInvariant()}-";
+
+    private string BuildBucketKey(string name) => KeyPrefix + name.ToLowerInvariant();
+
+    // Buckets created by other applications keep their key, since the prefix will not match.
+    private string ToDisplayName(string bucketKey) =>
+        bucketKey.StartsWith(KeyPrefix, StringComparison.OrdinalIgnoreCase)
+            ? bucketKey[KeyPrefix.Length..]
+            : bucketKey;
 
     private static async Task EnsureSuccessAsync(
         HttpResponseMessage response,
@@ -147,9 +162,9 @@ public class BucketService(
         };
     }
 
-    private static BucketDto ToDto(AutodeskBucketResponse bucket, bool isActive) => new()
+    private BucketDto ToDto(AutodeskBucketResponse bucket, bool isActive) => new()
     {
-        BucketKey = bucket.BucketKey,
+        Name = ToDisplayName(bucket.BucketKey),
         PolicyKey = bucket.PolicyKey,
         IsActive = isActive,
         CreatedAtUtc = bucket.CreatedDate is null

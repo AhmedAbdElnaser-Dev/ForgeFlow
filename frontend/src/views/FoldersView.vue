@@ -10,7 +10,7 @@ const search = ref('')
 const folders = computed(() => {
   const term = search.value?.trim().toLowerCase() ?? ''
 
-  return buckets.value.filter((bucket) => bucket.bucketKey.toLowerCase().includes(term))
+  return buckets.value.filter((bucket) => bucket.name.toLowerCase().includes(term))
 })
 
 function messageFrom(error, fallback) {
@@ -74,15 +74,15 @@ onMounted(loadFolders)
     </v-row>
 
     <v-row v-else-if="folders.length">
-      <v-col v-for="folder in folders" :key="folder.bucketKey" cols="12" sm="6" md="4" lg="3">
+      <v-col v-for="folder in folders" :key="folder.name" cols="12" sm="6" md="4" lg="3">
         <v-card
-          :to="{ name: 'folder', params: { bucketKey: folder.bucketKey } }"
+          :to="{ name: 'folder', params: { name: folder.name } }"
           class="pa-5 h-100"
           hover
         >
           <v-icon color="primary" icon="mdi-folder-outline" size="40" class="mb-4" />
 
-          <div class="text-body-2 text-truncate mb-1">{{ folder.bucketKey }}</div>
+          <div class="text-subtitle-2 text-truncate">{{ folder.name }}</div>
 
           <v-chip size="x-small" variant="tonal" class="mt-3" :text="folder.policyKey" />
         </v-card>

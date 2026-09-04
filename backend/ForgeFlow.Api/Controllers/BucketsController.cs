@@ -38,24 +38,24 @@ public class BucketsController(IBucketService buckets) : ApiControllerBase
     }
 
     // Activation is ForgeFlow state: it decides which buckets the rest of the system may use.
-    [HttpPut("{bucketKey}/activation")]
+    [HttpPut("{name}/activation")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> SetActivation(
-        string bucketKey,
+        string name,
         SetBucketActivationRequest request,
         CancellationToken cancellationToken)
     {
-        await buckets.SetActivationAsync(bucketKey, request.IsActive, cancellationToken);
+        await buckets.SetActivationAsync(name, request.IsActive, cancellationToken);
 
         return NoContent();
     }
 
-    [HttpDelete("{bucketKey}")]
-    public async Task<IActionResult> Delete(string bucketKey, CancellationToken cancellationToken)
+    [HttpDelete("{name}")]
+    public async Task<IActionResult> Delete(string name, CancellationToken cancellationToken)
     {
         try
         {
-            await buckets.DeleteAsync(bucketKey, cancellationToken);
+            await buckets.DeleteAsync(name, cancellationToken);
 
             return NoContent();
         }

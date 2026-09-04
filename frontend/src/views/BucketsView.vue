@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import * as bucketService from '@/services/bucketService'
 
 const headers = [
-  { title: 'Bucket', key: 'bucketKey' },
+  { title: 'Bucket', key: 'name' },
   { title: 'Active', key: 'isActive', width: 130, align: 'center' },
   { title: 'Retention', key: 'policyKey', width: 150 },
   { title: 'Created', key: 'createdAtUtc', width: 210 },
@@ -94,7 +94,7 @@ async function submitCreate() {
     const created = await bucketService.createBucket(newBucket.value)
     buckets.value = [...buckets.value, created]
     isCreateOpen.value = false
-    showNotice(`Created ${created.bucketKey}`)
+    showNotice(`Created ${created.name}`)
   } catch (error) {
     showNotice(messageFrom(error, 'Could not create the bucket.'), 'error')
   } finally {
@@ -105,11 +105,11 @@ async function submitCreate() {
 async function toggleActivation(bucket) {
   const previous = bucket.isActive
   bucket.isActive = !previous
-  togglingKey.value = bucket.bucketKey
+  togglingKey.value = bucket.name
 
   try {
-    await bucketService.setBucketActivation(bucket.bucketKey, bucket.isActive)
-    showNotice(bucket.isActive ? `Activated ${bucket.bucketKey}` : `Deactivated ${bucket.bucketKey}`)
+    await bucketService.setBucketActivation(bucket.name, bucket.isActive)
+    showNotice(bucket.isActive ? `Activated ${bucket.name}` : `Deactivated ${bucket.name}`)
   } catch (error) {
     bucket.isActive = previous
     showNotice(messageFrom(error, 'Could not change activation.'), 'error')
@@ -122,11 +122,11 @@ async function confirmDelete() {
   isDeleting.value = true
 
   try {
-    const { bucketKey } = bucketToDelete.value
-    await bucketService.deleteBucket(bucketKey)
-    buckets.value = buckets.value.filter((bucket) => bucket.bucketKey !== bucketKey)
+    const { name } = bucketToDelete.value
+    await bucketService.deleteBucket(name)
+    buckets.value = buckets.value.filter((bucket) => bucket.name !== name)
     bucketToDelete.value = null
-    showNotice(`Deleted ${bucketKey}`)
+    showNotice(`Deleted ${name}`)
   } catch (error) {
     showNotice(messageFrom(error, 'Could not delete the bucket.'), 'error')
   } finally {
@@ -188,10 +188,10 @@ onMounted(loadBuckets)
         :items="buckets"
         :search="search"
         :loading="isLoading"
-        item-value="bucketKey"
+        item-value="name"
       >
-        <template #[`item.bucketKey`]="{ item }">
-          <span class="text-body-2">{{ item.bucketKey }}</span>
+        <template #[`item.name`]="{ item }">
+          <span class="text-body-2">{{ item.name }}</span>
         </template>
 
         <template #[`item.isActive`]="{ item }">
@@ -199,11 +199,11 @@ onMounted(loadBuckets)
             :color="item.isActive ? 'primary' : 'secondary'"
             :variant="item.isActive ? 'flat' : 'outlined'"
             :prepend-icon="item.isActive ? 'mdi-check-circle' : 'mdi-circle-outline'"
-            :disabled="togglingKey === item.bucketKey"
+            :disabled="togglingKey === item.name"
             :text="item.isActive ? 'Active' : 'Inactive'"
             size="small"
             link
-            :aria-label="`${item.isActive ? 'Deactivate' : 'Activate'} ${item.bucketKey}`"
+            :aria-label="`${item.isActive ? 'Deactivate' : 'Activate'} ${item.name}`"
             @click="toggleActivation(item)"
           />
         </template>
@@ -227,7 +227,7 @@ onMounted(loadBuckets)
             color="error"
             variant="text"
             size="small"
-            :aria-label="`Delete ${item.bucketKey}`"
+            :aria-label="`Delete ${item.name}`"
             @click="bucketToDelete = item"
           />
         </template>
@@ -293,7 +293,7 @@ onMounted(loadBuckets)
       max-width="460"
       @update:model-value="bucketToDelete = null"
     >
-      <v-card title="Delete bucket" :subtitle="bucketToDelete?.bucketKey">
+      <v-card title="Delete bucket" :subtitle="bucketToDelete?.name">
         <v-card-text>
           <v-alert
             type="warning"

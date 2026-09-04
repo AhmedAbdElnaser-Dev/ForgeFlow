@@ -3,13 +3,13 @@ import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const bucketKey = route.params.bucketKey
+const folderName = route.params.name
 
 const notice = ref('')
 const isNoticeOpen = ref(false)
 
 function onUploadModel() {
-  console.log('Upload model requested for', bucketKey)
+  console.log('Upload model requested for', folderName)
   notice.value = 'Uploading is not built yet.'
   isNoticeOpen.value = true
 }
@@ -20,7 +20,7 @@ function onUploadModel() {
     <v-empty-state
       icon="mdi-cube-outline"
       title="No models yet"
-      :text="`This folder is empty. Upload a model to ${bucketKey}.`"
+      :text="`This folder is empty. Upload a model to ${folderName}.`"
     >
       <template #actions>
         <v-btn color="primary" variant="flat" prepend-icon="mdi-upload" @click="onUploadModel">

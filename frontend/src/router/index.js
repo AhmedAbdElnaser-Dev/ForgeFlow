@@ -18,7 +18,7 @@ const router = createRouter({
       meta: { title: 'Folders', icon: 'mdi-folder-outline', nav: true },
     },
     {
-      path: '/folders/:bucketKey',
+      path: '/folders/:name',
       name: 'folder',
       component: () => import('@/views/FolderView.vue'),
       // parent drives the breadcrumb trail in the layout.
