@@ -21,8 +21,7 @@ const router = createRouter({
       path: '/folders/:name',
       name: 'folder',
       component: () => import('@/views/FolderView.vue'),
-      // parent drives the breadcrumb trail in the layout.
-      meta: { title: 'Folder', parent: 'folders' },
+      meta: { title: 'Folder' },
     },
     {
       path: '/buckets',

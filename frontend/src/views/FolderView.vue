@@ -1,8 +1,9 @@
 <script setup>
 import { ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 const folderName = route.params.name
 
 const notice = ref('')
@@ -17,6 +18,16 @@ function onUploadModel() {
 
 <template>
   <v-container class="py-8">
+    <v-btn
+      variant="text"
+      size="small"
+      prepend-icon="mdi-arrow-left"
+      class="mb-4 ms-n2"
+      @click="router.push({ name: 'folders' })"
+    >
+      Folders
+    </v-btn>
+
     <v-empty-state
       icon="mdi-cube-outline"
       title="No models yet"

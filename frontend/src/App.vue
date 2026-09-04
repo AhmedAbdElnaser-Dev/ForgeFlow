@@ -25,28 +25,6 @@ const navigationItems = computed(() =>
 
 const initials = computed(() => auth.user?.email?.slice(0, 2).toUpperCase() ?? '')
 
-// Walk meta.parent upwards so a page only has to declare who it sits under.
-const breadcrumbs = computed(() => {
-  const trail = []
-
-  for (let name = route.name; name; ) {
-    const match = router.getRoutes().find((candidate) => candidate.name === name)
-    if (!match) {
-      break
-    }
-
-    trail.unshift({
-      title: name === route.name && route.params.name ? route.params.name : match.meta.title,
-      to: { name, params: route.params },
-      disabled: name === route.name,
-    })
-
-    name = match.meta.parent
-  }
-
-  return trail
-})
-
 async function onSignOut() {
   await auth.signOut()
   await router.replace({ name: 'login' })
@@ -109,12 +87,6 @@ async function onSignOut() {
     </v-navigation-drawer>
 
     <v-main>
-      <v-breadcrumbs v-if="breadcrumbs.length" :items="breadcrumbs" density="compact" class="px-6 pt-4 pb-0">
-        <template #divider>
-          <v-icon icon="mdi-chevron-right" size="16" />
-        </template>
-      </v-breadcrumbs>
-
       <RouterView />
     </v-main>
   </v-app>
