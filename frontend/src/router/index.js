@@ -9,13 +9,13 @@ const router = createRouter({
       path: '/',
       name: 'profile',
       component: ProfileView,
-      meta: { title: 'Profile', icon: 'mdi-account-outline', nav: true },
+      meta: { title: 'Profile', icon: 'mdi-account-outline', nav: true, order: 1 },
     },
     {
       path: '/folders',
       name: 'folders',
       component: () => import('@/views/FoldersView.vue'),
-      meta: { title: 'Folders', icon: 'mdi-folder-outline', nav: true },
+      meta: { title: 'Folders', icon: 'mdi-folder-outline', nav: true, order: 3 },
     },
     {
       path: '/folders/:name',
@@ -32,6 +32,7 @@ const router = createRouter({
         title: 'Buckets',
         icon: 'mdi-database-outline',
         nav: true,
+        order: 2,
         roles: ['Admin'],
       },
     },

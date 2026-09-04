@@ -14,11 +14,13 @@ const showNavigation = computed(() => !route.meta.public)
 // Collapse to icons on narrow screens, since there is no header to toggle from.
 const isRail = computed(() => !mdAndUp.value)
 
+// meta.order fixes the sidebar order, since route registration order is not guaranteed.
 const navigationItems = computed(() =>
   router
     .getRoutes()
     .filter((candidate) => candidate.meta.nav)
-    .filter((candidate) => !candidate.meta.roles || auth.hasAnyRole(candidate.meta.roles)),
+    .filter((candidate) => !candidate.meta.roles || auth.hasAnyRole(candidate.meta.roles))
+    .sort((first, second) => (first.meta.order ?? 0) - (second.meta.order ?? 0)),
 )
 
 const initials = computed(() => auth.user?.email?.slice(0, 2).toUpperCase() ?? '')
