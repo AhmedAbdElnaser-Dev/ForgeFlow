@@ -7,6 +7,9 @@ public interface IBucketService
 {
     Task<IReadOnlyList<BucketDto>> ListAsync(CancellationToken cancellationToken = default);
 
+    // Buckets ForgeFlow is allowed to use. Safe to expose to any signed-in user.
+    Task<IReadOnlyList<BucketDto>> ListActiveAsync(CancellationToken cancellationToken = default);
+
     Task<BucketDto> CreateAsync(
         string name,
         BucketRetention retention,

@@ -44,6 +44,13 @@ public class BucketService(
             .ToList();
     }
 
+    public async Task<IReadOnlyList<BucketDto>> ListActiveAsync(CancellationToken cancellationToken = default)
+    {
+        var buckets = await ListAsync(cancellationToken);
+
+        return [.. buckets.Where(bucket => bucket.IsActive)];
+    }
+
     public async Task<BucketDto> CreateAsync(
         string name,
         BucketRetention retention,
