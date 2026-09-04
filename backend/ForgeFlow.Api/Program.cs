@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using ForgeFlow.Api.Data.Seeding;
 using ForgeFlow.Api.Extensions;
+using ForgeFlow.Api.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -11,7 +12,7 @@ builder.Services.AddAutodeskIntegration(configuration);
 builder.Services.AddForgeFlowCors(configuration);
 
 builder.Services
-    .AddControllers()
+    .AddControllers(mvc => mvc.Filters.Add<ModelExceptionFilter>())
     // Accept and return enums as their names, so "Transient" works instead of 0.
     .AddJsonOptions(json => json.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddRouting(options => options.LowercaseUrls = true);

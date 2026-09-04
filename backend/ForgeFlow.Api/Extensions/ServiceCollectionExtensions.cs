@@ -92,6 +92,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAutodeskTokenService, AutodeskTokenService>();
         services.AddSingleton<IAutodeskApiClient, AutodeskApiClient>();
         services.AddScoped<IBucketService, BucketService>();
+        services.AddScoped<IModelService, ModelService>();
         services.AddSingleton<AutodeskMapper>();
 
         return services;
